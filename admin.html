@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Admin | Haya Abayas</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0;background:#f3ece1;font:15px/1.6 Montserrat,Arial,sans-serif;color:#111}h3{font:600 24px 'Cormorant Garamond',Georgia,serif;margin:22px 0 0}
+.pan{background:#fff;max-width:760px;margin:20px auto;padding:22px;border-top:4px solid #111}label{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:12px 0 4px}
+input,textarea{width:100%;padding:10px;border:1px solid #d9ccb8;font:inherit;background:#fff}input[type=checkbox]{width:auto}
+.btn{background:#111;color:#fff;border:1px solid #111;padding:10px 18px;margin:6px 6px 0 0;font:500 12px Montserrat,sans-serif;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}.btn.o{background:#fff;color:#111}
+.row{display:flex;gap:10px;align-items:center;border-bottom:1px solid #d9ccb8;padding:10px 0}.row i{width:48px;height:60px;background:#f3ece1 center/cover;flex:none}.row span{flex:1}
+.tb{position:relative;display:inline-block;margin:6px 6px 0 0}.tb i{display:block;width:60px;height:76px;background:#f3ece1 center/cover}.tb a{position:absolute;top:-6px;right:-6px;background:#111;color:#fff;width:18px;height:18px;text-align:center;line-height:18px;border-radius:50%;cursor:pointer}
+.st{margin-top:10px;font-size:13px;color:#2d6a2d}</style></head><body><div id="a"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="config.js"></script>
+<script>
+const sb=supabase.createClient(SB_URL,SB_KEY),$=s=>document.querySelector(s),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let P=[],S={},ed=null,ti=[];
+const F=[['logo','Logo name (large script text, e.g. Haya)'],['brand','Brand name'],['tagline','Tagline'],['heroTitle','Homepage headline'],['heroSub','Homepage sub-text'],['t1','Highlight 1 (strip under banner)'],['t2','Highlight 2'],['t3','Highlight 3'],['about','About us text','t'],['policy','Shipping / orders / returns info','t'],['wa','WhatsApp number (country code, no +, e.g. 923001234567)'],['phone','Phone'],['email','Email'],['ig','Instagram handle'],['addr','Address'],['cur','Currency (e.g. PKR)']];
+const st=t=>{const e=$('#st');if(e)e.textContent=t};
+(async()=>{const r=await sb.auth.getSession();r.data.session?panel():loginUI()})();
+function loginUI(){$('#a').innerHTML=`<div class="pan" style="max-width:400px"><h3>Admin Login</h3><label>Email</label><input id="e" type="email"><label>Password</label><input id="p" type="password"><button class="btn" onclick="li()">Login</button><div class="st" id="st"></div></div>`}
+async function li(){const r=await sb.auth.signInWithPassword({email:$('#e').value.trim(),password:$('#p').value});r.error?st(r.error.message):panel()}
+async function lo(){await sb.auth.signOut();loginUI()}
+async function panel(m){const a=await sb.from('products').select('*').order('created_at',{ascending:false}),b=await sb.from('settings').select('data').eq('id',1).maybeSingle();P=a.data||[];S=(b.data&&b.data.data)||{};draw(m||(a.error?a.error.message:''))}
+function edit(i){ed=i;ti=i===null?[]:[...(P[i].images||[])];draw()}
+function draw(m){const e=ed!==null&&P[ed]||{};
+$('#a').innerHTML=`<div class="pan"><div style="display:flex;justify-content:space-between"><b>ADMIN PANEL</b><a href="#" onclick="lo();return false">Logout</a></div>
+<h3>${ed!==null?'Edit':'Add'} Product</h3>
+<label>Product name</label><input id="n" value="${esc(e.name)}"><label>Price</label><input id="pr" value="${esc(e.price)}"><label>Sale price (optional)</label><input id="sp" value="${esc(e.sale_price)}">
+<label>Category</label><input id="c" value="${esc(e.category)}" placeholder="e.g. Classic, Party Wear" list="cl"><datalist id="cl">${[...new Set(P.map(p=>p.category).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+<label>Sizes (comma separated, optional)</label><input id="sz" value="${esc(e.sizes)}" placeholder="52, 54, 56, 58">
+<label>Description (fabric, colour, details)</label><textarea id="d" rows="4">${esc(e.description)}</textarea>
+<label>Photos (select one or many)</label><input type="file" accept="image/*" multiple onchange="ph(this)"><div id="th"></div>
+<label><input id="nw" type="checkbox" ${e.is_new?'checked':''}> Mark as New arrival</label><label><input id="o" type="checkbox" ${e.sold_out?'checked':''}> Sold out</label>
+<button class="btn" onclick="savP()">${ed!==null?'Update':'Add'} Product</button>${ed!==null?'<button class="btn o" onclick="edit(null)">Cancel</button>':''}
+<div class="st" id="st">${esc(m||'')}</div>
+<h3>Products (${P.length})</h3>${P.map((p,i)=>`<div class="row"><i style="${(p.images||[])[0]?`background-image:url(${p.images[0]})`:''}"></i><span>${esc(p.name)}<br><small>${esc(S.cur||'')} ${esc(p.sale_price||p.price)}</small></span><button class="btn o" onclick="edit(${i})">Edit</button><button class="btn o" onclick="del(${i})">Delete</button></div>`).join('')||'<p>No products yet.</p>'}
+<h3>Website Details</h3><label>Homepage banner photo (optional)</label><input type="file" accept="image/*" onchange="hp(this)">${S.heroImg?'<button class="btn o" onclick="S.heroImg=\'\';draw()">Remove banner photo</button>':''}
+${F.map(([k,l,t])=>`<label>${l}</label>${t?`<textarea rows="4" data-k="${k}">${esc(S[k])}</textarea>`:`<input data-k="${k}" value="${esc(S[k])}">`}`).join('')}
+<button class="btn" onclick="savS()">Save Website Details</button><div class="st" id="st2"></div></div>`;
+th();document.querySelectorAll('[data-k]').forEach(i=>i.oninput=()=>S[i.dataset.k]=i.value)}
+function th(){const t=$('#th');if(t)t.innerHTML=ti.map((x,i)=>`<span class="tb"><i style="background-image:url(${x})"></i><a onclick="ti.splice(${i},1);th()">×</a></span>`).join('')}
+function img(f,m,q){return new Promise(r=>{const i=new Image;i.onload=()=>{const k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',q))};i.src=URL.createObjectURL(f)})}
+async function up(d){const b=await (await fetch(d)).blob(),p='p/'+Date.now()+Math.random().toString(36).slice(2,7)+'.jpg',u=await sb.storage.from('images').upload(p,b,{contentType:'image/jpeg'});if(u.error)throw u.error;return sb.storage.from('images').getPublicUrl(p).data.publicUrl}
+async function ph(inp){for(const f of inp.files)ti.push(await img(f,1000,.82));inp.value='';th()}
+async function hp(inp){const f=inp.files[0];if(!f)return;try{S.heroImg=await up(await img(f,1600,.8));draw('Banner uploaded. Press "Save Website Details" below to make it live.')}catch(e){alert(e.message)}}
+async function savP(){const n=$('#n').value.trim();if(!n)return alert('Please enter product name');st('Saving, please wait...');
+try{const images=[];for(const x of ti)images.push(x.startsWith('data:')?await up(x):x);
+const row={name:n,price:$('#pr').value.trim(),sale_price:$('#sp').value.trim(),category:$('#c').value.trim(),sizes:$('#sz').value.trim(),description:$('#d').value.trim(),is_new:$('#nw').checked,sold_out:$('#o').checked,images};
+const r=ed!==null?await sb.from('products').update(row).eq('id',P[ed].id):await sb.from('products').insert(row);if(r.error)throw r.error;
+ed=null;ti=[];panel('Saved! It is now live on your website.')}catch(e){st('Error: '+e.message)}}
+async function del(i){if(!confirm('Delete this product?'))return;const r=await sb.from('products').delete().eq('id',P[i].id);r.error?alert(r.error.message):panel('Product deleted.')}
+async function savS(){const r=await sb.from('settings').upsert({id:1,data:S});$('#st2').textContent=r.error?'Error: '+r.error.message:'Saved! Website updated.'}
+</script></body></html>
